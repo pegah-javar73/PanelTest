@@ -10,11 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.2",
     "@types/react-router-dom": "^5.3.3",
+    "axios": "^1.12.2",
     "lucide-react": "^0.544.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^7.9.3"
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.9.3",
+    "universal-cookie": "^8.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",

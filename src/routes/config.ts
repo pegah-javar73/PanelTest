@@ -1,5 +1,8 @@
 // Route paths configuration
 export const ROUTES = {
+  // Authentication routes
+  LOGIN: '/login',
+  
   // Main route - Users only
   HOME: '/',
   USERS: '/',
@@ -10,29 +13,35 @@ export const ROUTES = {
 
 // Route metadata for navigation and breadcrumbs
 export const ROUTE_META = {
+  [ROUTES.LOGIN]: {
+    title: 'ورود به سیستم',
+    breadcrumb: 'ورود',
+    icon: 'LogIn',
+    requiresAuth: false,
+  },
   [ROUTES.HOME]: {
     title: 'مدیریت کاربران',
     breadcrumb: 'کاربران',
     icon: 'Users',
-    requiresAuth: false,
+    requiresAuth: true,
   },
   [ROUTES.USER_CREATE]: {
     title: 'افزودن کاربر جدید',
     breadcrumb: 'افزودن کاربر',
     icon: 'UserPlus',
-    requiresAuth: false,
+    requiresAuth: true,
   },
   [ROUTES.USER_EDIT]: {
     title: 'ویرایش کاربر',
     breadcrumb: 'ویرایش',
     icon: 'UserEdit',
-    requiresAuth: false,
+    requiresAuth: true,
   },
   [ROUTES.USER_VIEW]: {
     title: 'مشاهده کاربر',
     breadcrumb: 'مشاهده',
     icon: 'UserView',
-    requiresAuth: false,
+    requiresAuth: true,
   },
 } as const;
 

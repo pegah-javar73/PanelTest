@@ -11,3 +11,9 @@ export const LazyUserFormPage = lazy(() =>
     default: module.default 
   }))
 );
+
+export const LazyAuthPage = lazy(() => 
+  import('../pages/auth/view').then(module => ({ 
+    default: module.default 
+  }))
+);

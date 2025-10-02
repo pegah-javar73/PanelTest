@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import type { IPagination } from "../../components/grid/type";
 
 // User data interface
 export interface IUser {
@@ -35,9 +36,7 @@ export enum CrudMode {
 // User context interface
 export interface IUserContext {
   users: IUser[];
-  setUsers: Dispatch<SetStateAction<IUser[]>>;
   loading: boolean;
-  setLoading: Dispatch<SetStateAction<boolean>>;
   
   // CRUD operations
   createUser: (userData: IUserFormData) => Promise<void>;
@@ -53,12 +52,6 @@ export interface IUserContext {
   crudMode: CrudMode;
   setCrudMode: Dispatch<SetStateAction<CrudMode>>;
   
-  // Pagination
-  currentPage: number;
-  setCurrentPage: Dispatch<SetStateAction<number>>;
-  totalPages: number;
-  itemsPerPage: number;
-  
   // Search and filter
   searchTerm: string;
   setSearchTerm: Dispatch<SetStateAction<string>>;
@@ -71,11 +64,16 @@ export interface IUserContext {
   toggleUserSelection: (id: string) => void;
   selectAllUsers: () => void;
   clearSelection: () => void;
+  
+  // Pagination
+  paginationProps: IPagination;
 }
 
 // Props for user namespace
 export interface IUserNamespaceProps {
   children: React.ReactNode;
+  apiUrl?: string;
+  perPage?: number;
 }
 
 // Props for user form

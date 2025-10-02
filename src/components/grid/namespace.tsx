@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import GridBody from "./components/body/view";
 import GridHeader from "./components/header/view";
 import { type IGridContext, type IProps } from "./type";
-import { Sort_Enum, Type_Enum } from "./enum";
+import { Sort_Enum } from "./enum";
 
 const GridContext = createContext<IGridContext<any> | null>(null);
 
@@ -23,11 +23,18 @@ export const GridNamespace = ({
   singleSelect,
   onSelectionChange,
   pagination,
+  infiniteScroll,
+  apiUrl,
+  perPage,
 }: IProps) => {
   const [sortValue, setSortValue] = useState<Sort_Enum | undefined>(
     Sort_Enum.DESC
   );
-  const { currentPage, setCurrentPage, totalPages } = pagination;
+  
+  // Handle both pagination and infinite scroll modes
+  const currentPage = pagination?.currentPage;
+  const setCurrentPage = pagination?.setCurrentPage as React.Dispatch<React.SetStateAction<number>> | undefined;
+  const totalPages = pagination?.totalPages;
 
   // داده‌ها مستقیماً از API می‌آیند، نیازی به برش نیست
   const paginatedData = data;
@@ -44,7 +51,7 @@ export const GridNamespace = ({
     if (selectedRows.length === data.length) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(data.map((item) => item.id));
+      setSelectedRows(data.map((item: any) => item.id));
     }
   };
   const singleSelectRow = (id: string) => {
@@ -64,16 +71,19 @@ export const GridNamespace = ({
         currentPage,
         setCurrentPage,
         totalPages,
-        rowsPerPage: 10, // یا از props دریافت کنید
+        rowsPerPage: perPage || 10,
         selectedRows,
         setSelectedRows,
         toggleRow,
         isSelected,
         toggleAll,
         singleSelectRow,
-        selectable,
-        singleSelect,
+        selectable: selectable || false,
+        singleSelect: singleSelect || false,
         pagination,
+        infiniteScroll,
+        apiUrl,
+        perPage,
       }}>
       {children}
     </GridContext.Provider>

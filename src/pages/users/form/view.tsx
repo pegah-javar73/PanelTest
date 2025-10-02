@@ -1,74 +1,77 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, Save, User, Phone, Activity } from "lucide-react";
-import { InputField, SelectField, Button } from "../../../components/common";
-import type { IUserFormData } from "../type";
-import { UserStatus, CrudMode } from "../enum";
-import { useUserContext, UserNamespace } from "../namespace";
+import { ArrowRight, Save, User, Mail, Lock } from "lucide-react";
+import { InputField, Button } from "../../../components/common";
+import { useCreateUser, useUpdateUser, useGetUser } from "../hooks";
+import type { CreateUserData, UpdateUserData } from "../hooks";
 
 const UserFormPageContent: React.FC = () => {
   const navigate = useNavigate();
   const { mode, id } = useParams<{ mode: string; id?: string }>();
-  const { users, createUser, updateUser, loading } = useUserContext();
+  
+  // React Query hooks
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const { data: userData, isLoading: isLoadingUser } = useGetUser(id || '');
 
-  const [formData, setFormData] = useState<IUserFormData>({
-    name: "",
-    phone: "",
-    accessLevel: "user",
-    status: UserStatus.ACTIVE,
+  const [formData, setFormData] = useState<CreateUserData>({
+    username: "",
+    email: "",
+    password: "",
   });
 
-  const [errors, setErrors] = useState<Partial<IUserFormData>>({});
+  const [errors, setErrors] = useState<Partial<CreateUserData>>({});
 
   // Determine the current mode
-  const currentMode = mode === 'create' ? CrudMode.CREATE : 
-                     mode === 'edit' ? CrudMode.EDIT : 
-                     mode === 'view' ? CrudMode.VIEW : CrudMode.CREATE;
-
-  const isReadOnly = currentMode === CrudMode.VIEW;
+  const isEditMode = mode === 'edit';
+  const isViewMode = mode === 'view';
+  const isCreateMode = mode === 'create';
+  const isReadOnly = isViewMode;
 
   // Initialize form data for edit/view modes
   useEffect(() => {
-    if ((currentMode === CrudMode.EDIT || currentMode === CrudMode.VIEW) && id) {
-      const user = users.find(u => u.id === id);
-      if (user) {
-        setFormData({
-          name: user.name,
-          phone: user.phone,
-          accessLevel: user.accessLevel,
-          status: user.status,
-        });
-      }
-    } else {
+    if ((isEditMode || isViewMode) && userData) {
       setFormData({
-        name: "",
-        phone: "",
-        accessLevel: "user",
-        status: UserStatus.ACTIVE,
+        username: userData.username || `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
+        email: userData.email || '',
+        password: '', // Don't populate password for security
+      });
+    } else if (isCreateMode) {
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
       });
     }
-  }, [currentMode, id, users]);
+  }, [isEditMode, isViewMode, isCreateMode, userData]);
 
   // Validation function
   const validateForm = (): boolean => {
-    const newErrors: Partial<IUserFormData> = {};
+    const newErrors: Partial<CreateUserData> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "نام الزامی است";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "نام باید حداقل ۲ کاراکتر باشد";
+    // Username validation
+    if (!formData.username.trim()) {
+      newErrors.username = "نام کاربری الزامی است";
+    } else if (formData.username.trim().length < 3) {
+      newErrors.username = "نام کاربری باید حداقل ۳ کاراکتر باشد";
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "شماره تلفن الزامی است";
-    } else if (!/^(\+98|0)?9\d{9}$/.test(formData.phone.replace(/\s/g, ""))) {
-      if (formData.phone !== "Admin") { // Allow Admin as special case
-        newErrors.phone = "شماره تلفن معتبر نیست";
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "ایمیل الزامی است";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "فرمت ایمیل معتبر نیست";
+    }
+
+    // Password validation (only for create mode or if password is provided in edit mode)
+    if (isCreateMode) {
+      if (!formData.password.trim()) {
+        newErrors.password = "رمز عبور الزامی است";
+      } else if (formData.password.length < 6) {
+        newErrors.password = "رمز عبور باید حداقل ۶ کاراکتر باشد";
       }
-    }
-
-    if (!formData.accessLevel) {
-      newErrors.accessLevel = "سطح دسترسی الزامی است";
+    } else if (isEditMode && formData.password && formData.password.length < 6) {
+      newErrors.password = "رمز عبور باید حداقل ۶ کاراکتر باشد";
     }
 
     setErrors(newErrors);
@@ -79,22 +82,44 @@ const UserFormPageContent: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      try {
-        if (currentMode === CrudMode.CREATE) {
-          await createUser(formData);
-        } else if (currentMode === CrudMode.EDIT && id) {
-          await updateUser(id, formData);
+    if (!validateForm()) return;
+
+    try {
+      if (isCreateMode) {
+        await createUserMutation.mutateAsync(formData);
+        navigate('/', { 
+          state: { message: 'کاربر با موفقیت ایجاد شد' } 
+        });
+      } else if (isEditMode && id) {
+        const updateData: UpdateUserData = {
+          username: formData.username,
+          email: formData.email,
+        };
+        
+        // Only include password if it's provided
+        if (formData.password.trim()) {
+          updateData.password = formData.password;
         }
-        navigate('/');
-      } catch (error) {
-        console.error('Error saving user:', error);
+
+        await updateUserMutation.mutateAsync({ 
+          id, 
+          userData: updateData 
+        });
+        navigate('/', { 
+          state: { message: 'کاربر با موفقیت به‌روزرسانی شد' } 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      // Handle specific error messages
+      if (error.message.includes('Authentication failed')) {
+        navigate('/auth/login');
       }
     }
   };
 
   // Handle input changes
-  const handleInputChange = (field: keyof IUserFormData, value: string) => {
+  const handleInputChange = (field: keyof CreateUserData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error for this field
@@ -109,17 +134,14 @@ const UserFormPageContent: React.FC = () => {
   };
 
   const getTitle = () => {
-    switch (currentMode) {
-      case CrudMode.CREATE:
-        return "افزودن کاربر جدید";
-      case CrudMode.EDIT:
-        return "ویرایش کاربر";
-      case CrudMode.VIEW:
-        return "مشاهده کاربر";
-      default:
-        return "فرم کاربر";
-    }
+    if (isCreateMode) return "افزودن کاربر جدید";
+    if (isEditMode) return "ویرایش کاربر";
+    if (isViewMode) return "مشاهده کاربر";
+    return "فرم کاربر";
   };
+
+  // Loading state
+  const isLoading = createUserMutation.isPending || updateUserMutation.isPending || isLoadingUser;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -145,63 +167,45 @@ const UserFormPageContent: React.FC = () => {
         {/* Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Field */}
+            {/* Username Field */}
             <InputField
-              label="نام کاربر"
-              value={formData.name}
-              onChange={(value) => handleInputChange("name", value)}
+              label="نام کاربری"
+              value={formData.username}
+              onChange={(value) => handleInputChange("username", value)}
               icon={User}
-              error={errors.name}
-              disabled={loading}
+              error={errors.username}
+              disabled={isLoading}
               readOnly={isReadOnly}
               required
-              placeholder="نام کاربر را وارد کنید"
+              placeholder="نام کاربری را وارد کنید"
             />
 
-            {/* Phone Field */}
+            {/* Email Field */}
             <InputField
-              label="شماره تلفن"
-              value={formData.phone}
-              onChange={(value) => handleInputChange("phone", value)}
-              type="tel"
-              icon={Phone}
-              error={errors.phone}
-              disabled={loading}
+              label="ایمیل"
+              value={formData.email}
+              onChange={(value) => handleInputChange("email", value)}
+              type="email"
+              icon={Mail}
+              error={errors.email}
+              disabled={isLoading}
               readOnly={isReadOnly}
               required
-              placeholder="09xxxxxxxxx"
+              placeholder="example@domain.com"
             />
 
-            {/* Access Level Field */}
-            <SelectField
-              label="سطح دسترسی"
-              value={formData.accessLevel}
-              onChange={(value) => handleInputChange("accessLevel", value)}
-              options={[
-                { value: "admin", label: "مدیر سیستم" },
-                { value: "moderator", label: "ناظر" },
-                { value: "user", label: "کاربر" },
-                { value: "viewer", label: "بازدیدکننده" }
-              ]}
-              error={errors.accessLevel}
-              disabled={loading}
+            {/* Password Field */}
+            <InputField
+              label={isEditMode ? "رمز عبور جدید (اختیاری)" : "رمز عبور"}
+              value={formData.password}
+              onChange={(value) => handleInputChange("password", value)}
+              type="password"
+              icon={Lock}
+              error={errors.password}
+              disabled={isLoading}
               readOnly={isReadOnly}
-              required
-            />
-
-            {/* Status Field */}
-            <SelectField
-              label="وضعیت"
-              value={formData.status}
-              onChange={(value) => handleInputChange("status", value as UserStatus)}
-              options={[
-                { value: UserStatus.ACTIVE, label: "فعال" },
-                { value: UserStatus.INACTIVE, label: "غیرفعال" },
-                { value: UserStatus.PENDING, label: "در انتظار" }
-              ]}
-              icon={Activity}
-              disabled={loading}
-              readOnly={isReadOnly}
+              required={isCreateMode}
+              placeholder={isEditMode ? "برای تغییر رمز عبور وارد کنید" : "رمز عبور را وارد کنید"}
             />
 
             {/* Action Buttons */}
@@ -211,6 +215,7 @@ const UserFormPageContent: React.FC = () => {
                 variant="secondary"
                 onClick={handleBack}
                 className="flex-1"
+                disabled={isLoading}
               >
                 انصراف
               </Button>
@@ -219,12 +224,12 @@ const UserFormPageContent: React.FC = () => {
                 <Button
                   type="submit"
                   variant="primary"
-                  loading={loading}
+                  loading={isLoading}
                   icon={Save}
                   iconPosition="right"
                   className="flex-1"
                 >
-                  {currentMode === CrudMode.CREATE ? "ایجاد کاربر" : "ذخیره تغییرات"}
+                  {isCreateMode ? "ایجاد کاربر" : "ذخیره تغییرات"}
                 </Button>
               )}
             </div>
@@ -236,11 +241,7 @@ const UserFormPageContent: React.FC = () => {
 };
 
 const UserFormPage: React.FC = () => {
-  return (
-    <UserNamespace>
-      <UserFormPageContent />
-    </UserNamespace>
-  );
+  return <UserFormPageContent />;
 };
 
 export default UserFormPage;

@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useEffect } from "react";
 import type { 
   IUser, 
   IUserFormData, 
@@ -7,6 +7,7 @@ import type {
   IUserNamespaceProps
 } from "./type";
 import { UserStatus, CrudMode } from "./enum";
+import { usePaginatedData } from "../../components/grid/hooks/usePaginatedData";
 
 const UserContext = createContext<IUserContext | null>(null);
 
@@ -18,193 +19,142 @@ export const useUserContext = (): IUserContext => {
   return context;
 };
 
-export const UserNamespace = ({ children }: IUserNamespaceProps) => {
+export const UserNamespace = ({ 
+  children, 
+  apiUrl = "/api/users", 
+  perPage = 6 
+}: IUserNamespaceProps) => {
   // State management
-  const [users, setUsers] = useState<IUser[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<IUser | null>(null);
   const [crudMode, setCrudMode] = useState<CrudMode>(CrudMode.CREATE);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const itemsPerPage = 10;
   
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  
+  // Debug pagination changes
+  useEffect(() => {
+    console.log('Current page changed to:', currentPage);
+  }, [currentPage]);
+  
   // Selection state
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  // Mock API functions (replace with real API calls)
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data
-      const mockUsers: IUser[] = [
-        {
-          id: "1",
-          name: "محمد رفیعی",
-          phone: "09129591900",
-          accessLevel: "admin",
-          lastUpdate: "1403/06/11-10:46:07",
-          status: UserStatus.ACTIVE,
-        },
-        {
-          id: "2", 
-          name: "کیان شکوهیان",
-          phone: "09366101072",
-          accessLevel: "user",
-          lastUpdate: "1403/06/11-10:46:07",
-          status: UserStatus.ACTIVE,
-        },
-        {
-          id: "3",
-          name: "مهسا زارع",
-          phone: "09207958656",
-          accessLevel: "moderator", 
-          lastUpdate: "1403/06/11-10:46:07",
-          status: UserStatus.PENDING,
-        },
-        {
-          id: "4",
-          name: "سید کمال ساجدی راد",
-          phone: "02298594041",
-          accessLevel: "admin",
-          lastUpdate: "1403/06/11-10:46:07",
-          status: UserStatus.ACTIVE,
-        },
-        {
-          id: "5",
-          name: "مدیر سیستم",
-          phone: "Admin",
-          accessLevel: "admin",
-          lastUpdate: "1403/06/11-10:46:07",
-          status: UserStatus.ACTIVE,
-        },
-      ];
-      
-      // Apply filters
-      let filteredUsers = mockUsers;
-      
-      if (searchTerm) {
-        filteredUsers = filteredUsers.filter(user => 
-          user.name.includes(searchTerm) || 
-          user.phone.includes(searchTerm)
-        );
+  // Use paginated query for users data
+  const {
+    data: paginatedData,
+    isLoading,
+    error,
+  } = usePaginatedData<any>({
+    url: apiUrl,
+    queryKey: ["users", searchTerm, statusFilter, apiUrl],
+    per_page: perPage, 
+    page: currentPage,
+  });
+
+  // Debug API data changes
+  useEffect(() => {
+    console.log('API data changed:', paginatedData);
+  }, [paginatedData]);
+
+  // Map paginated data to our user format
+  const users = useMemo(() => {
+    if (!paginatedData?.data) return [];
+    
+    const mappedUsers = paginatedData.data.map((user: any) => ({
+      id: user.id.toString(),
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || '---',
+      phone: user.email || '', // Using email as phone since reqres.in doesn't have phone
+      accessLevel: "user", // Default access level
+      lastUpdate: new Date().toLocaleDateString('fa-IR') + '-' + new Date().toLocaleTimeString('fa-IR'),
+      status: UserStatus.ACTIVE,
+      avatar: user.avatar,
+      email: user.email || '',
+    }));
+    
+    console.log('Mapped users for page', currentPage, ':', mappedUsers);
+    return mappedUsers;
+  }, [paginatedData, currentPage]);
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (error) {
+      console.error('Users API error:', error);
+      // If it's an authentication error, the AuthErrorHandler will handle it
+      if (error.message?.includes('Authentication failed')) {
+        // Don't show additional error messages, let the AuthErrorHandler handle it
+        return;
       }
-      
-      if (statusFilter !== "all") {
-        filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
-      }
-      
-      // Calculate pagination
-      const total = filteredUsers.length;
-      const pages = Math.ceil(total / itemsPerPage);
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-      
-      setUsers(paginatedUsers);
-      setTotalPages(pages);
-      
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
     }
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [error]);
+
+  // Create pagination props for traditional pagination mode
+  const paginationProps = {
+    currentPage,
+    totalPages: paginatedData?.total_pages || 1,
+    setCurrentPage: (page: number) => {
+      console.log('setCurrentPage called with:', page);
+      setCurrentPage(page);
+    },
+  };
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   // CRUD operations
-  const createUser = async (userData: IUserFormData): Promise<void> => {
-    setLoading(true);
+  const createUser = async (_userData: IUserFormData): Promise<void> => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: IUser = {
-        id: Date.now().toString(),
-        ...userData,
-        lastUpdate: new Date().toLocaleDateString('fa-IR') + '-' + new Date().toLocaleTimeString('fa-IR'),
-      };
-      
-      // Add to mock data storage
-      const existingUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      const updatedUsers = [newUser, ...existingUsers];
-      localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+      // TODO: Replace with actual API call
+      // await httpService.post('/api/users', userData);
       
       setIsModalOpen(false);
       setCurrentUser(null);
       
-      // Refresh the users list
-      await fetchUsers();
+      // Invalidate and refetch the query
+      // queryClient.invalidateQueries(['users']);
       
     } catch (error) {
       console.error("Error creating user:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const updateUser = async (id: string, userData: IUserFormData): Promise<void> => {
-    setLoading(true);
+  const updateUser = async (_id: string, _userData: IUserFormData): Promise<void> => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update in mock data storage
-      const existingUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      const updatedUsers = existingUsers.map((user: IUser) => 
-        user.id === id 
-          ? { 
-              ...user, 
-              ...userData,
-              lastUpdate: new Date().toLocaleDateString('fa-IR') + '-' + new Date().toLocaleTimeString('fa-IR'),
-            }
-          : user
-      );
-      localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+      // TODO: Replace with actual API call
+      // await httpService.put(`/api/users/${id}`, userData);
       
       setIsModalOpen(false);
       setCurrentUser(null);
       
-      // Refresh the users list
-      await fetchUsers();
+      // Invalidate and refetch the query
+      // queryClient.invalidateQueries(['users']);
       
     } catch (error) {
       console.error("Error updating user:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const deleteUser = async (id: string): Promise<void> => {
-    setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Remove from mock data storage
-      const existingUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      const updatedUsers = existingUsers.filter((user: IUser) => user.id !== id);
-      localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+      // TODO: Replace with actual API call
+      // await httpService.delete(`/api/users/${id}`);
       
       setSelectedUsers(prev => prev.filter(userId => userId !== id));
       
-      // Refresh the users list
-      await fetchUsers();
+      // Invalidate and refetch the query
+      // queryClient.invalidateQueries(['users']);
       
     } catch (error) {
       console.error("Error deleting user:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -229,16 +179,9 @@ export const UserNamespace = ({ children }: IUserNamespaceProps) => {
     setSelectedUsers([]);
   };
 
-  // Load users on mount and when dependencies change
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
   const contextValue: IUserContext = {
     users,
-    setUsers,
-    loading,
-    setLoading,
+    loading: isLoading,
     createUser,
     updateUser,
     deleteUser,
@@ -249,10 +192,6 @@ export const UserNamespace = ({ children }: IUserNamespaceProps) => {
     setCurrentUser,
     crudMode,
     setCrudMode,
-    currentPage,
-    setCurrentPage,
-    totalPages,
-    itemsPerPage,
     searchTerm,
     setSearchTerm,
     statusFilter,
@@ -262,6 +201,7 @@ export const UserNamespace = ({ children }: IUserNamespaceProps) => {
     toggleUserSelection,
     selectAllUsers,
     clearSelection,
+    paginationProps,
   };
 
   return (

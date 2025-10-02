@@ -1,8 +1,26 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+
 import { ROUTES } from './config';
 import { PageLoading } from '../components/common/LoadingSpinner';
-import { LazyUsersPage, LazyUserFormPage } from './LazyComponents';
+import { LazyUsersPage, LazyUserFormPage, LazyAuthPage } from './LazyComponents';
+import ProtectedRoute from './ProtectedRoute';
+import { AuthNamespace } from '../pages/auth/namespace';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 // Layout wrapper component
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -58,25 +76,87 @@ class RouteErrorBoundary extends React.Component<
 
 const AppRouter: React.FC = () => {
   return (
-    <BrowserRouter>
-      <RouteErrorBoundary>
-        <Layout>
-          <Suspense fallback={<PageLoading />}>
-            <Routes>
-              {/* Main Route - Users Page */}
-              <Route path={ROUTES.HOME} element={<LazyUsersPage />} />
-              
-              {/* User Form Routes */}
-              <Route path="/users/:mode" element={<LazyUserFormPage />} />
-              <Route path="/users/:mode/:id" element={<LazyUserFormPage />} />
-              
-              {/* Catch all route - redirect to users */}
-              <Route path="*" element={<LazyUsersPage />} />
-            </Routes>
-          </Suspense>
-        </Layout>
-      </RouteErrorBoundary>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthNamespace>
+          <RouteErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoading />}>
+                <Routes>
+                  {/* Authentication Route */}
+                  <Route path={ROUTES.LOGIN} element={<LazyAuthPage />} />
+                  
+                  {/* Protected Routes */}
+                  <Route 
+                    path={ROUTES.HOME} 
+                    element={
+                      <ProtectedRoute>
+                        <LazyUsersPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* User Form Routes */}
+                  <Route 
+                    path="/users/:mode" 
+                    element={
+                      <ProtectedRoute>
+                        <LazyUserFormPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/users/:mode/:id" 
+                    element={
+                      <ProtectedRoute>
+                        <LazyUserFormPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Catch all route - redirect to home */}
+                  <Route 
+                    path="*" 
+                    element={
+                      <ProtectedRoute>
+                        <LazyUsersPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                </Routes>
+              </Suspense>
+            </Layout>
+          </RouteErrorBoundary>
+        </AuthNamespace>
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={8}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              direction: 'rtl',
+            },
+            success: {
+              duration: 3000,
+              style: {
+                background: '#10B981',
+                color: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#EF4444',
+                color: '#fff',
+              },
+            },
+          }}
+        />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 

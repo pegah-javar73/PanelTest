@@ -4,6 +4,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const GridPagination = () => {
   const { pagination } = useGridContext<any>();
+  
+  if (!pagination) return null;
+  
   const { currentPage, setCurrentPage, totalPages } = pagination;
 
   if (!totalPages || totalPages <= 1) return null;
@@ -68,7 +71,10 @@ const GridPagination = () => {
               ) : (
                 <button
                   key={page}
-                  onClick={() => setCurrentPage(page)}
+                  onClick={() => {
+                    console.log('Pagination click:', page, 'Current:', currentPage);
+                    setCurrentPage(page as number);
+                  }}
                   className={`px-3 py-2 text-sm font-medium border rounded-md ${
                     currentPage === page
                       ? "bg-blue-600 text-white border-blue-600"

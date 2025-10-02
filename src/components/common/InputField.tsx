@@ -45,8 +45,8 @@ const InputField: React.FC<InputFieldProps> = ({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           readOnly={readOnly}
-          className={`w-full ${Icon ? 'pr-10' : 'pr-3'} pl-3 py-2 border rounded-md text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? 'border-red-500' : 'border-gray-300'
+          className={`w-full ${Icon ? 'pr-10' : 'pr-3'} pl-3 py-2 border border-opacity-50 rounded-md text-right focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:border-opacity-100 ${
+            error ? 'border-red-500 border-opacity-100' : 'border-slate-400'
           } ${readOnly || disabled ? 'bg-gray-50' : ''} ${inputClassName}`}
           placeholder={placeholder}
         />
