@@ -1,10 +1,10 @@
 import React from 'react';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, LayoutDashboard } from 'lucide-react';
 import { useAuthContext } from '../../pages/auth/namespace';
 import Button from './Button';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuthContext();
+  const { token, logout } = useAuthContext();
 
   const handleLogout = () => {
     logout();
@@ -18,35 +18,20 @@ const Header: React.FC = () => {
           {/* Logo/Brand */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
+              <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">سپرنا</h1>
+            <h1 className="text-xl font-bold text-gray-900">پنل مدیریت</h1>
           </div>
 
           {/* User Info & Actions */}
           <div className="flex items-center gap-4">
-            {user && (
+            {token && (
               <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user.first_name} {user.last_name}
-                  </p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+               
+                
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-gray-500" />
                 </div>
-                
-                {user.avatar && (
-                  <img
-                    src={user.avatar}
-                    alt={`${user.first_name} ${user.last_name}`}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                )}
-                
-                {!user.avatar && (
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-500" />
-                  </div>
-                )}
               </div>
             )}
             

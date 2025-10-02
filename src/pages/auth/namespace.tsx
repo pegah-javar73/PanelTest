@@ -1,7 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { 
-  IAuthUser, 
   ILoginFormData, 
   IAuthContext, 
   IAuthNamespaceProps
@@ -23,21 +22,27 @@ export const useAuthContext = (): IAuthContext => {
 
 export const AuthNamespace = ({ children }: IAuthNamespaceProps) => {
   // State management
-  const [user, setUser] = useState<IAuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // React Query login hook
   const loginMutation = useLogin();
 
   // Computed state
-  const isAuthenticated = user !== null;
+  const isAuthenticated = token !== null && token !== '';
 
   // Initialize authentication state from stored data
   const initializeAuth = useCallback(() => {
     try {
-      const storedUser = authService.getStoredAuthData();
-      if (storedUser) {
-        setUser(storedUser);
+      const storedToken = authService.getStoredAuthToken();
+      console.log('🔐 Initializing auth - stored token:', storedToken ? 'Found' : 'Not found');
+      if (storedToken) {
+        setToken(storedToken);
+        // Initialize auth service
+        authService.initializeAuth();
+        console.log('✅ Auth initialized successfully');
+      } else {
+        console.log('❌ No stored token found');
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
@@ -57,10 +62,10 @@ export const AuthNamespace = ({ children }: IAuthNamespaceProps) => {
     });
   };
 
-  // Update user state when login is successful
+  // Update token state when login is successful
   useEffect(() => {
     if (loginMutation.isSuccess && loginMutation.data) {
-      setUser(loginMutation.data);
+      setToken(loginMutation.data);
     }
   }, [loginMutation.isSuccess, loginMutation.data]);
 
@@ -70,7 +75,7 @@ export const AuthNamespace = ({ children }: IAuthNamespaceProps) => {
   // Logout function
   const logout = useCallback(() => {
     authService.clearAuthData();
-    setUser(null);
+    setToken(null);
     loginMutation.reset(); // Reset mutation state
   }, [loginMutation]);
 
@@ -81,8 +86,8 @@ export const AuthNamespace = ({ children }: IAuthNamespaceProps) => {
 
   // Context value
   const contextValue: IAuthContext = {
-    user,
-    setUser,
+    token,
+    setToken,
     isAuthenticated,
     loading: loading || loginMutation.isLoading,
     setLoading,

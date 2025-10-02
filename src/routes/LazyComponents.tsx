@@ -7,7 +7,7 @@ export const LazyUsersPage = lazy(() =>
 );
 
 export const LazyUserFormPage = lazy(() => 
-  import('../pages/users/form/view').then(module => ({ 
+  import('../pages/users/components/form/view').then(module => ({ 
     default: module.default 
   }))
 );

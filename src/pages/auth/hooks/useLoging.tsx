@@ -2,14 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../../../services/auth/authService';
-import type { ILoginFormData, IAuthUser } from '../type';
+import type { ILoginFormData } from '../type';
 
 interface UseLoginReturn {
   login: (credentials: ILoginFormData) => void;
   isLoading: boolean;
   error: string | null;
   isSuccess: boolean;
-  data: IAuthUser | undefined;
+  data: string | undefined;
   reset: () => void;
 }
 
@@ -17,7 +17,7 @@ export const useLogin = (): UseLoginReturn => {
   const navigate = useNavigate();
 
   const mutation = useMutation({
-    mutationFn: async (credentials: ILoginFormData): Promise<IAuthUser> => {
+    mutationFn: async (credentials: ILoginFormData): Promise<string> => {
       // Show loading toast
       const loadingToast = toast.loading('در حال ورود...');
       
@@ -30,14 +30,12 @@ export const useLogin = (): UseLoginReturn => {
         throw error;
       }
     },
-    onSuccess: (data: IAuthUser) => {
-      console.log('✅ Login successful:', data);
-      toast.success(`خوش آمدید ${data.first_name} ${data.last_name}! 🎉`);
-      // Navigate to dashboard after successful login
+    onSuccess: () => {
+      toast.success('با موفقیت وارد شدید');
       navigate('/', { replace: true });
     },
     onError: (error: Error) => {
-      console.error('❌ Login failed:', error.message);
+    
       
       // Show appropriate error message
       let errorMessage = 'خطا در ورود به سیستم';
