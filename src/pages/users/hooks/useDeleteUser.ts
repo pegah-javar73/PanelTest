@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../../services/user/userService';
+import { toast } from 'react-hot-toast';
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export const useDeleteUser = () => {
       return await userService.deleteUser(id);
     },
     onSuccess: () => {
-      // Invalidate and refetch users list
+      toast.success(` کاربر با موفقیت حذف شدند`);      // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {

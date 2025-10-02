@@ -8,6 +8,8 @@ import type {
 } from "./type";
 import { UserStatus, CrudMode } from "./enum";
 import { usePaginatedData } from "../../components/grid/hooks/usePaginatedData";
+import { useDeleteUser, useBulkDeleteUsers } from "./hooks/useDeleteUser";
+import { ConfirmationDialog } from "../../components/common";
 
 const UserContext = createContext<IUserContext | null>(null);
 
@@ -24,10 +26,29 @@ export const UserNamespace = ({
   apiUrl = "/api/users", 
   perPage = 6 
 }: IUserNamespaceProps) => {
+  // Hooks for delete operations
+  const deleteUserMutation = useDeleteUser();
+  const bulkDeleteUsersMutation = useBulkDeleteUsers();
+
   // State management
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<IUser | null>(null);
   const [crudMode, setCrudMode] = useState<CrudMode>(CrudMode.CREATE);
+  
+  // Confirmation dialog state
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    loading: false,
+  });
   
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -144,16 +165,22 @@ export const UserNamespace = ({
 
   const deleteUser = async (id: string): Promise<void> => {
     try {
-      // TODO: Replace with actual API call
-      // await httpService.delete(`/api/users/${id}`);
-      
+      await deleteUserMutation.mutateAsync(id);
+      // Remove from selected users if it was selected
       setSelectedUsers(prev => prev.filter(userId => userId !== id));
-      
-      // Invalidate and refetch the query
-      // queryClient.invalidateQueries(['users']);
-      
     } catch (error) {
       console.error("Error deleting user:", error);
+      throw error;
+    }
+  };
+
+  const bulkDeleteUsers = async (ids: string[]): Promise<void> => {
+    try {
+      await bulkDeleteUsersMutation.mutateAsync(ids);
+      // Clear selection after successful bulk delete
+      setSelectedUsers([]);
+    } catch (error) {
+      console.error("Error bulk deleting users:", error);
       throw error;
     }
   };
@@ -179,12 +206,32 @@ export const UserNamespace = ({
     setSelectedUsers([]);
   };
 
+  // Confirmation dialog helpers
+  const showConfirmation = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmationDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      loading: false,
+    });
+  };
+
+  const closeConfirmation = () => {
+    setConfirmationDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const setConfirmationLoading = (loading: boolean) => {
+    setConfirmationDialog(prev => ({ ...prev, loading }));
+  };
+
   const contextValue: IUserContext = {
     users,
     loading: isLoading,
     createUser,
     updateUser,
     deleteUser,
+    bulkDeleteUsers,
     getUserById,
     isModalOpen,
     setIsModalOpen,
@@ -202,11 +249,29 @@ export const UserNamespace = ({
     selectAllUsers,
     clearSelection,
     paginationProps,
+    // Confirmation dialog
+    showConfirmation,
+    closeConfirmation,
+    setConfirmationLoading,
+    confirmationDialog,
   };
 
   return (
     <UserContext.Provider value={contextValue}>
       {children}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmationDialog.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmationDialog.onConfirm}
+        title={confirmationDialog.title}
+        message={confirmationDialog.message}
+        loading={confirmationDialog.loading}
+        type="danger"
+        confirmText="حذف"
+        cancelText="انصراف"
+      />
     </UserContext.Provider>
   );
 };

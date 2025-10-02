@@ -42,6 +42,7 @@ export interface IUserContext {
   createUser: (userData: IUserFormData) => Promise<void>;
   updateUser: (id: string, userData: IUserFormData) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  bulkDeleteUsers: (ids: string[]) => Promise<void>;
   getUserById: (id: string) => IUser | undefined;
   
   // Modal and form state
@@ -67,6 +68,18 @@ export interface IUserContext {
   
   // Pagination
   paginationProps: IPagination;
+  
+  // Confirmation dialog
+  showConfirmation: (title: string, message: string, onConfirm: () => void) => void;
+  closeConfirmation: () => void;
+  setConfirmationLoading: (loading: boolean) => void;
+  confirmationDialog: {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    loading: boolean;
+  };
 }
 
 // Props for user namespace

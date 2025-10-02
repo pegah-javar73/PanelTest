@@ -12,13 +12,16 @@ const UserGrid: React.FC<IUserGridProps> = ({ className }) => {
     users,
     loading,
     deleteUser,
+    bulkDeleteUsers,
     searchTerm,
     setSearchTerm,
     statusFilter,
     setStatusFilter,
     selectedUsers,
-    clearSelection,
     paginationProps,
+    showConfirmation,
+    setConfirmationLoading,
+    closeConfirmation,
   } = useUserContext();
 
   // CRUD Operations Handlers
@@ -34,29 +37,44 @@ const UserGrid: React.FC<IUserGridProps> = ({ className }) => {
     navigate(`/users/view/${user.id}`);
   };
 
-  const handleDelete = async (user: IUser) => {
-    const confirmMessage = `آیا از حذف کاربر "${user.name}" اطمینان دارید؟`;
-    if (window.confirm(confirmMessage)) {
+  const handleDelete = (user: IUser) => {
+    const title = "حذف کاربر";
+    const message = `آیا از حذف کاربر اطمینان دارید؟`;
+    
+    showConfirmation(title, message, async () => {
       try {
+        setConfirmationLoading(true);
         await deleteUser(user.id);
+        closeConfirmation(); // Close modal after successful deletion
       } catch (error) {
+        console.error("خطا در حذف کاربر:", error);
+        closeConfirmation(); // Close modal even on error
         alert("خطا در حذف کاربر");
+      } finally {
+        setConfirmationLoading(false);
       }
-    }
+    });
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedUsers.length === 0) return;
     
-    const confirmMessage = `آیا از حذف ${selectedUsers.length} کاربر انتخاب شده اطمینان دارید؟`;
-    if (window.confirm(confirmMessage)) {
+    const title = "حذف کاربران";
+    const message = `آیا از حذف ${selectedUsers.length} کاربر انتخاب شده اطمینان دارید؟ این عمل قابل بازگشت نیست.`;
+    
+    showConfirmation(title, message, async () => {
       try {
-        await Promise.all(selectedUsers.map(id => deleteUser(id)));
-        clearSelection();
+        setConfirmationLoading(true);
+        await bulkDeleteUsers(selectedUsers);
+        closeConfirmation(); // Close modal after successful bulk deletion
       } catch (error) {
+        console.error("خطا در حذف کاربران:", error);
+        closeConfirmation(); // Close modal even on error
         alert("خطا در حذف کاربران");
+      } finally {
+        setConfirmationLoading(false);
       }
-    }
+    });
   };
 
   // Generate grid columns

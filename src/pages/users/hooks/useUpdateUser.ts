@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../../services/user/userService';
-import type { UpdateUserData, UserResponse } from '../../../services/user/userService';
+import type { UpdateUserData, UserResponse } from '../../../services/user/type';
+import { toast } from 'react-hot-toast';
 
-export type { UpdateUserData } from '../../../services/user/userService';
 export type UpdateUserResponse = UserResponse;
 
 export const useUpdateUser = () => {
@@ -19,8 +19,7 @@ export const useUpdateUser = () => {
       return await userService.updateUser(id, userData);
     },
     onSuccess: () => {
-      // Invalidate and refetch users list
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('اطلاعات کاربر با موفقیت بروزرسانی شد');      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       console.error('Update user error:', error);

@@ -59,7 +59,6 @@ class UserService {
         data: userData,
       });
       
-      toast.success('کاربر جدید با موفقیت ایجاد شد');
       return result;
     } catch (error: any) {
       console.error('Create user error:', error);
@@ -82,7 +81,7 @@ class UserService {
         data: userData,
       });
       
-      toast.success('اطلاعات کاربر با موفقیت بروزرسانی شد');
+    
       return result;
     } catch (error: any) {
       console.error('Update user error:', error);
@@ -104,7 +103,6 @@ class UserService {
         method: 'DELETE',
       });
       
-      toast.success('کاربر با موفقیت حذف شد');
     } catch (error: any) {
       console.error('Delete user error:', error);
       if (error.response?.status === 401) {
