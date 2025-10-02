@@ -1,9 +1,9 @@
-export { default as InputField } from './InputField';
-export { default as SelectField } from './SelectField';
-export { default as Button } from './Button';
-export { default as LoadingSpinner } from './LoadingSpinner';
-export { default as Header } from './Header';
+export { default as InputField } from './inputfield';
+export { default as SelectField } from './selectfield';
+export { default as Button } from './button';
+export { default as LoadingSpinner } from './loadingspinner';
+export { default as Header } from './header';
 
-export type { InputFieldProps } from './InputField';
-export type { SelectFieldProps, SelectOption } from './SelectField';
-export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
+export type { InputFieldProps } from './inputfield';
+export type { SelectFieldProps, SelectOption } from './selectfield';
+export type { ButtonProps, ButtonVariant, ButtonSize } from './button';

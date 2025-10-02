@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from '../../../components/common/Button';
-import InputField from '../../../components/common/InputField';
+import Button from '../../../components/common/button';
+import InputField from '../../../components/common/inputfield';
 import type { ILoginFormProps, ILoginFormData } from '../type';
 
 const LoginForm: React.FC<ILoginFormProps> = ({

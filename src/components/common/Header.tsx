@@ -1,7 +1,7 @@
 import React from 'react';
 import { LogOut, User, LayoutDashboard } from 'lucide-react';
 import { useAuthContext } from '../../pages/auth/namespace';
-import Button from './Button';
+import Button from './button';
 
 const Header: React.FC = () => {
   const { token, logout } = useAuthContext();

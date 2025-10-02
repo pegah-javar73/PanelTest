@@ -4,9 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
 import { ROUTES } from './config';
-import { PageLoading } from '../components/common/LoadingSpinner';
-import { LazyUsersPage, LazyUserFormPage, LazyAuthPage } from './LazyComponents';
-import ProtectedRoute from './ProtectedRoute';
+import { PageLoading } from '../components/common/loadingspinner';
+import { LazyUsersPage, LazyUserFormPage, LazyAuthPage } from './lazycomponents';
+import ProtectedRoute from './protectedroute';
 import { AuthNamespace } from '../pages/auth/namespace';
 
 // Create a client

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../pages/auth/namespace';
-import { PageLoading } from '../components/common/LoadingSpinner';
+import { PageLoading } from '../components/common/loadingspinner';
 import { ROUTES } from './config';
 
 interface ProtectedRouteProps {

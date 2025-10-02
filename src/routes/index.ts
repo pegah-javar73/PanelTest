@@ -1,3 +1,3 @@
-export { default as AppRouter } from './AppRouter';
+export { default as AppRouter } from './approuter';
 export { ROUTES, ROUTE_META, routeHelpers } from './config';
-export * from './LazyComponents';
+export * from './lazycomponents';
